@@ -1,0 +1,29 @@
+# Entorno virtual
+venv/
+env/
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+
+# Base de datos local
+*.db
+*.sqlite3
+
+# Variables de entorno (claves de API, secretos)
+.env
+
+# Imagenes subidas por los usuarios (no se versionan, se generan en runtime)
+static/images/*
+!static/images/.gitkeep
+
+# Editores / IDEs
+.vscode/
+.idea/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
