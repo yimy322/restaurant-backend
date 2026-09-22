@@ -20,7 +20,6 @@ from pathlib import Path
 import streamlit as st
 from dotenv import load_dotenv
 from groq import Groq
-from sqlmodel import Session
 
 # Asegurar path
 CURRENT_DIR = Path(__file__).resolve().parent
@@ -28,12 +27,21 @@ if str(CURRENT_DIR) not in sys.path:
     sys.path.insert(0, str(CURRENT_DIR))
 
 # Importar conexión real y servicios de backend
-from app.database import engine
-from app.services.restaurant_service import (
-    get_menu,
-    get_opening_hours,
-    request_table_reservation,
-)
+import requests
+
+def obtener_secreto(nombre_env: str, default: str = "") -> str:
+    valor = os.getenv(nombre_env, "")
+    if valor:
+        return valor
+    try:
+        if nombre_env in st.secrets:
+            return st.secrets[nombre_env]
+    except Exception:
+        pass
+    return default
+
+BACKEND_URL = obtener_secreto("BACKEND_URL", "http://localhost:8000").rstrip("/")
+groq_api_key = obtener_secreto("GROQ_API_KEY", "")
 
 # Cargar variables de entorno (.env)
 load_dotenv()
@@ -292,63 +300,91 @@ DIAS_TRADUCCION = {
 # 3. EJECUCIÓN REAL DE FUNCIONES DE NEGOCIO (SQLITE DATABASE)
 # =============================================================================
 def ejecutar_consultar_menu(categoria: str = None) -> list:
-    with Session(engine) as session:
-        return get_menu(session, category_name=categoria)
+    try:
+        resp = requests.get(f"{BACKEND_URL}/api/dishes/", timeout=10)
+        resp.raise_for_status()
+        platos = resp.json()
+    except requests.RequestException as e:
+        return []
+
+    if categoria:
+        # Necesitamos el nombre de categoría por dish; si /api/dishes/
+        # no lo incluye anidado, filtramos por category_id via /api/categories/
+        try:
+            cat_resp = requests.get(f"{BACKEND_URL}/api/categories/", timeout=10)
+            cat_resp.raise_for_status()
+            categorias = cat_resp.json()
+            cat_id = next(
+                (c["id"] for c in categorias if c["name"].lower() == categoria.lower()),
+                None,
+            )
+            if cat_id is not None:
+                platos = [p for p in platos if p.get("category_id") == cat_id]
+        except requests.RequestException:
+            pass
+
+    return platos
 
 def ejecutar_consultar_horario(dia_semana: str = None) -> list:
-    day_query = None
+    try:
+        resp = requests.get(f"{BACKEND_URL}/api/opening-hours/", timeout=10)
+        resp.raise_for_status()
+        horarios = resp.json()
+    except requests.RequestException:
+        return []
+
     if dia_semana:
         cleaned = dia_semana.strip().lower()
         day_query = DIAS_TRADUCCION.get(cleaned, cleaned)
-    with Session(engine) as session:
-        return get_opening_hours(session, day_of_week=day_query)
+        horarios = [h for h in horarios if h.get("day_of_week") == day_query]
 
-def ejecutar_solicitar_reserva(
-    nombre_cliente: str,
-    telefono: str,
-    fecha: str,
-    hora: str,
-    numero_personas: int,
-) -> dict:
+    return horarios
+
+def ejecutar_solicitar_reserva(nombre_cliente, telefono, fecha, hora, numero_personas) -> dict:
+    payload = {
+        "customer_name": nombre_cliente.strip(),
+        "phone": telefono.strip(),
+        "reservation_date": fecha.strip(),
+        "reservation_time": hora.strip(),
+        "guests": int(numero_personas),
+    }
     try:
-        res_date = datetime.strptime(fecha.strip(), "%Y-%m-%d").date()
-        hora_clean = hora.strip()
-        if len(hora_clean.split(":")) == 2:
-            res_time = datetime.strptime(hora_clean, "%H:%M").time()
-        else:
-            res_time = datetime.strptime(hora_clean, "%H:%M:%S").time()
+        resp = requests.post(f"{BACKEND_URL}/api/reservations/", json=payload, timeout=10)
 
-        with Session(engine) as session:
-            reserva = request_table_reservation(
-                session=session,
-                customer_name=nombre_cliente.strip(),
-                phone=telefono.strip(),
-                reservation_date=res_date,
-                reservation_time=res_time,
-                guests=int(numero_personas),
-            )
+        if resp.status_code in (200, 201):
+            reserva = resp.json()
             return {
                 "resultado": "EXITO",
-                "codigo_reserva": f"RES-{reserva.id:04d}",
-                "cliente": reserva.customer_name,
-                "telefono": reserva.phone,
-                "fecha": reserva.reservation_date.strftime("%Y-%m-%d"),
-                "hora": reserva.reservation_time.strftime("%H:%M"),
-                "personas": reserva.guests,
-                "estado": reserva.status,
+                "codigo_reserva": f"RES-{reserva['id']:04d}",
+                "cliente": reserva["customer_name"],
+                "telefono": reserva["phone"],
+                "fecha": reserva["reservation_date"],
+                "hora": reserva["reservation_time"],
+                "personas": reserva["guests"],
+                "estado": reserva["status"],
                 "mensaje": "Reserva registrada y confirmada exitosamente en el sistema.",
             }
-    except ValueError as val_err:
-        return {
-            "resultado": "RECHAZADA",
-            "motivo": str(val_err),
-            "instruccion_asistente": "Explica cordialmente al cliente por qué no se pudo registrar y ofrécele opciones válidas.",
-        }
-    except Exception as err:
-        return {
-            "resultado": "ERROR",
-            "motivo": f"Error inesperado al procesar la reserva: {str(err)}",
-        }
+        elif resp.status_code == 400:
+            # Regla de negocio violada (ej. fuera de horario de atención)
+            return {
+                "resultado": "RECHAZADA",
+                "motivo": resp.json().get("detail", "No se pudo registrar la reserva."),
+                "instruccion_asistente": "Explica cordialmente al cliente por qué no se pudo registrar y ofrécele opciones válidas.",
+            }
+        elif resp.status_code == 422:
+            # Datos mal formados (fecha/hora con formato incorrecto, campo faltante)
+            return {
+                "resultado": "RECHAZADA",
+                "motivo": "Alguno de los datos tiene un formato inválido.",
+                "instruccion_asistente": "Pide al cliente que confirme nuevamente sus datos, especialmente fecha y hora.",
+            }
+        else:
+            return {
+                "resultado": "ERROR",
+                "motivo": f"El servidor respondió con código {resp.status_code}: {resp.text}",
+            }
+    except requests.RequestException as e:
+        return {"resultado": "ERROR", "motivo": f"No se pudo contactar al servidor: {str(e)}"}
 
 def ejecutar_tool(nombre_funcion: str, argumentos: dict) -> dict:
     if nombre_funcion == "consultar_menu":
@@ -558,11 +594,6 @@ if "messages" not in st.session_state:
 
 if "groq_history" not in st.session_state:
     st.session_state.groq_history = []
-
-# Cargar API Key
-groq_api_key = os.getenv("GROQ_API_KEY", "")
-if not groq_api_key and "GROQ_API_KEY" in st.secrets:
-    groq_api_key = st.secrets["GROQ_API_KEY"]
 
 client_groq = obtener_cliente_groq(groq_api_key)
 modelo_seleccionado = "qwen/qwen3.8-27b"
