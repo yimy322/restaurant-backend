@@ -5,3 +5,5 @@ python-dotenv
 python-multipart
 bcrypt
 python-jose[cryptography]
+groq
+streamlit
