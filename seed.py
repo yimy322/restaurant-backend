@@ -36,32 +36,32 @@ def seed_database():
             dishes = [
                 # Entradas
                 Dish(
-                    name="Ceviche Clásico",
-                    description="Pescado fresco del día marinado en zumo de limón, ají limo, cebolla roja, camote glaseado y choclo desgranado.",
-                    price=38.00,
-                    category_id=cat_entradas.id,
-                    image_url="/img/comidas/ceviche.jpg"
-                ),
-                Dish(
                     name="Causa Limeña de Pollo",
                     description="Suave masa de papa amarilla sazonada con ají amarillo y limón, rellena de pechuga de pollo deshilachada y palta fuerte.",
                     price=24.00,
                     category_id=cat_entradas.id,
-                    image_url="/img/comidas/causa.jpg"
+                    image_url="/static/seed-images/dish_1.jpg"
                 ),
                 Dish(
                     name="Papa a la Huancaína",
                     description="Papas sancochadas bañadas en cremosa salsa huancaína tradicional a base de queso fresco y ají amarillo, con huevo y aceituna.",
                     price=20.00,
                     category_id=cat_entradas.id,
-                    image_url="/img/comidas/huancaina.jpg"
+                    image_url="/static/seed-images/dish_2.jpg"
                 ),
                 Dish(
                     name="Anticuchos de Corazón",
                     description="Tres brochetas de corazón de res maceradas en ají panca y especias peruanas, acompañadas de papa dorada y choclo.",
                     price=28.00,
                     category_id=cat_entradas.id,
-                    image_url="/img/comidas/anticucho.jpg"
+                    image_url="/static/seed-images/dish_3.jpg"
+                ),
+                Dish(
+                    name="Ceviche Clásico",
+                    description="Pescado fresco del día marinado en zumo de limón, ají limo, cebolla roja, camote glaseado y choclo desgranado.",
+                    price=38.00,
+                    category_id=cat_entradas.id,
+                    image_url="/static/seed-images/dish_4.jpg"
                 ),
                 # Fondos
                 Dish(
@@ -69,28 +69,21 @@ def seed_database():
                     description="Trozos jugosos de lomo fino salteados al wok con cebolla, tomate, ají amarillo y cilantro, servido con papas fritas crocantes y arroz con choclo.",
                     price=46.00,
                     category_id=cat_fondos.id,
-                    image_url="/img/comidas/lomo.png"
+                    image_url="/static/seed-images/dish_5.png"
                 ),
                 Dish(
                     name="Ají de Gallina Tradicional",
                     description="Pechuga de gallina deshilachada en crema de ají amarillo, nueces y queso parmesano, servido con arroz blanco y papas amarillas.",
                     price=36.00,
                     category_id=cat_fondos.id,
-                    image_url="/img/comidas/aji_de_gallina.png"
+                    image_url="/static/seed-images/dish_6.png"
                 ),
                 Dish(
                     name="Arroz con Mariscos",
                     description="Arroz al wok aromatizado con pasta de ají amarillo y vino blanco, con mixtura de mariscos selectos (langostinos, calamares y conchas).",
                     price=48.00,
                     category_id=cat_fondos.id,
-                    image_url="/img/comidas/arroz_mariscos.jpg"
-                ),
-                Dish(
-                    name="Seco de Res con Frejoles",
-                    description="Guiso tierno de carne de res macerada en chicha de jora y culantro, servido con frejoles cremosos y arroz criollo.",
-                    price=42.00,
-                    category_id=cat_fondos.id,
-                    image_url="/img/comidas/seco_res.webp"
+                    image_url="/static/seed-images/dish_7.jpg"
                 ),
                 # Postres
                 Dish(
@@ -98,21 +91,14 @@ def seed_database():
                     description="Clásico manjar blanco a base de yemas de huevo aromatizado con esencia de vainilla, coronado con merengue al oporto y canela.",
                     price=18.00,
                     category_id=cat_postres.id,
-                    image_url="/img/comidas/suspiro.png"
-                ),
-                Dish(
-                    name="Mazamorra Morada con Arroz con Leche (Clásico)",
-                    description="El tradicional postre bicolor peruano: mazamorra de maíz morado con frutas secas combinada con suave arroz con leche de olla.",
-                    price=16.00,
-                    category_id=cat_postres.id,
-                    image_url="/img/comidas/mazamorra_morada.png"
+                    image_url="/static/seed-images/dish_8.png"
                 ),
                 Dish(
                     name="Picarones con Miel de Chancaca",
                     description="Aros crocantes de masa de camote y zapallo bañados en miel artesanal perfumada con naranja, canela y clavo de olor.",
                     price=15.00,
                     category_id=cat_postres.id,
-                    image_url="/img/comidas/picarones.jpg"
+                    image_url="/static/seed-images/dish_9.jpg"
                 ),
                 # Bebidas
                 Dish(
@@ -120,21 +106,21 @@ def seed_database():
                     description="Bebida emblemática preparada con maíz morado hervido con piña, manzana, canela y clavo de olor, con toque de limón fresco.",
                     price=18.00,
                     category_id=cat_bebidas.id,
-                    image_url="/img/comidas/chicha.jpg"
+                    image_url="/static/seed-images/dish_10.jpg"
                 ),
                 Dish(
-                    name="Pisco Sour Quebranta",
-                    description="Cóctel bandera peruano elaborado con pisco puro Quebranta, zumo de limón recién exprimido, jarabe de goma y clara de huevo.",
+                    name="Inca Kola",
+                    description="Gaseosa peruana de sabor a hierba luisa.",
                     price=25.00,
                     category_id=cat_bebidas.id,
-                    image_url="/img/comidas/pisco_sour.jpg"
+                    image_url="/static/seed-images/dish_11.png"
                 ),
                 Dish(
                     name="Limonada Frozen con Hierba Buena",
                     description="Refrescante limonada granizada con hojas frescas de hierba buena y jarabe artesanal.",
                     price=14.00,
                     category_id=cat_bebidas.id,
-                    image_url="/img/comidas/limonada_frozen.png"
+                    image_url="/static/seed-images/dish_12.png"
                 ),
             ]
             session.add_all(dishes)
