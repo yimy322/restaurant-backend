@@ -1,8 +1,12 @@
+from dotenv import load_dotenv
+
+load_dotenv()  # carga las variables del archivo .env ANTES de importar los routers de abajo
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import create_db_and_tables
-from app.routes import categories, chat, dishes, opening_hours, reservations
+from app.routes import auth, categories, chat, dishes, opening_hours, reservations
 from fastapi.staticfiles import StaticFiles
 
 @asynccontextmanager
@@ -24,6 +28,7 @@ app.add_middleware(
 # monta la carpeta "static" para servir archivos estaticos (imagenes, CSS, JS, etc.)
 app.mount("/static", StaticFiles(directory="static"), name="static") 
 
+app.include_router(auth.router)
 app.include_router(categories.router)
 app.include_router(dishes.router)
 app.include_router(opening_hours.router)
