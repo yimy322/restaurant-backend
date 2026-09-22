@@ -1,12 +1,19 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlmodel import Session, select
+
 from app.database import get_session
 from app.models import OpeningHour, Reservation, ReservationCreate
+from app.security import get_current_admin
 
 router = APIRouter(prefix="/api/reservations", tags=["reservations"])
 
 WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+VALID_STATUSES = ["pending", "confirmed", "cancelled"]
+
+class ReservationStatusUpdate(BaseModel):
+    status: str
 
 @router.get("/", response_model=List[Reservation])
 def list_reservations(session: Session = Depends(get_session)):
@@ -36,6 +43,29 @@ def create_reservation(reservation_in: ReservationCreate, session: Session = Dep
         )
 
     reservation = Reservation.model_validate(reservation_in)
+    session.add(reservation)
+    session.commit()
+    session.refresh(reservation)
+    return reservation
+
+@router.patch("/{reservation_id}/status", response_model=Reservation)
+def update_reservation_status(
+    reservation_id: int,
+    status_update: ReservationStatusUpdate,
+    session: Session = Depends(get_session),
+    current_admin: str = Depends(get_current_admin),
+):
+    if status_update.status not in VALID_STATUSES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Estado inválido. Debe ser uno de: {', '.join(VALID_STATUSES)}",
+        )
+
+    reservation = session.get(Reservation, reservation_id)
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+
+    reservation.status = status_update.status
     session.add(reservation)
     session.commit()
     session.refresh(reservation)
