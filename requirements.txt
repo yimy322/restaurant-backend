@@ -3,3 +3,5 @@ uvicorn[standard]
 sqlmodel
 python-dotenv
 python-multipart
+groq
+streamlit
